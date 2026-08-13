@@ -1,0 +1,19 @@
+services:
+  cursor-api-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: registry.cn-hangzhou.aliyuncs.com/zkyml/cursor-agent-api-proxy:latest
+    container_name: cursor-api-proxy
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-4646}:4646"
+    environment:
+      - PORT=4646
+      - CURSOR_API_KEY=${CURSOR_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4646/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

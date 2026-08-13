@@ -14,34 +14,6 @@ import {
 } from "../adapter/cli-to-openai.js";
 import type { OpenAIChatRequest } from "../types/openai.js";
 
-const KNOWN_MODELS = [
-  "auto",
-  "composer-1.5",
-  "composer-1",
-  "opus-4.6-thinking",
-  "opus-4.6",
-  "opus-4.5-thinking",
-  "opus-4.5",
-  "sonnet-4.5-thinking",
-  "sonnet-4.5",
-  "gpt-5.3-codex",
-  "gpt-5.3-codex-fast",
-  "gpt-5.3-codex-low",
-  "gpt-5.3-codex-low-fast",
-  "gpt-5.3-codex-high",
-  "gpt-5.3-codex-high-fast",
-  "gpt-5.3-codex-xhigh",
-  "gpt-5.3-codex-xhigh-fast",
-  "gpt-5.3-codex-spark-preview",
-  "gpt-5.2",
-  "gpt-5.2-codex",
-  "gpt-5.2-codex-low",
-  "gpt-5.2-codex-low-fast",
-  "gpt-5.1-codex-max",
-  "gemini-3-pro",
-  "gemini-3-flash",
-  "grok",
-];
 
 function extractApiKey(req: Request): string | undefined {
   const auth = req.headers.authorization;
@@ -261,10 +233,21 @@ async function handleNonStreamingResponse(
 
 export function handleModels(_req: Request, res: Response): void {
   const now = Math.floor(Date.now() / 1000);
+  let models: string[] = [];
+  try {
+    const out = require("child_process").execSync("agent --list-models", { timeout: 10000, encoding: "utf8" });
+    models = out.trim().split("\n")
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.includes(" - "))
+      .map((s: string) => s.split(" - ")[0].trim())
+      .filter(Boolean);
+  } catch (err) {
+    console.error("[models] Failed to fetch dynamic models list.", err);
+  }
 
   res.json({
     object: "list",
-    data: KNOWN_MODELS.map((id) => ({
+    data: models.map((id) => ({
       id,
       object: "model" as const,
       owned_by: "cursor",
